@@ -1,0 +1,121 @@
+<html>
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js"></script>
+    <script src="syria.js"></script>
+    <script src="trump.js"></script>
+    <script src="trump_sample.js"></script>
+    <script src="ca.js"></script>
+    <script src="cloud.js"></script>
+  </head>
+  <body>
+    <h1 style="text-align: center;">CSE 587 Data Intensive Computing - Lab2</h1>
+    <p style="float: right;">Please select a topic: 
+    <select id="topics">
+      <option value="trump">Trump</option>
+      <option value="trumpSample">Trump (Sample Data)</option>
+      <option value="syria">Syria</option>
+      <option value="ca">Cambridge Analytica</option>
+    </select></p>
+    <h3>Word Cloud for Twitter Data</h3>
+    <div id="chart1"></div>
+    <h3>Word Cloud for NYTimes Data</h3>
+    <div id="chart2"></div>
+    <script>
+
+        //drawWordCloud("trump");
+        drawWordCloud("trump","tweets","#chart1");
+        drawWordCloud("trump","articles","#chart2");
+
+        document.getElementById('topics').onchange = function() {
+            document.getElementById("chart1").innerHTML = "";
+            document.getElementById("chart2").innerHTML = "";
+            var option = this.options[this.selectedIndex].text.toLowerCase().replace(" ","");   
+            console.log("selected option = ",option);        
+            drawWordCloud(option,"tweets","#chart1");
+            drawWordCloud(option,"articles","#chart2");
+        };
+        
+      
+      function drawWordCloud(option,type,id){
+            var elem = id.replace("#","");
+            document.getElementById(elem).innerHTML = "";
+            var data_articles = null;
+            var data_tweets = null;
+            var count = 500;
+            var word_count= {};
+
+            if(option == "trump") {
+                data_articles = trump_articles;
+                data_tweets = trump_tweets;
+            } else if (option == "trump(sample data)") {
+                count = 50;
+                data_articles = trump_sample_articles;
+                data_tweets = trump_sample_tweets;
+            } else if (option == "syria") {
+                data_articles = syria_articles;
+                data_tweets = syria_tweets;
+            } else if (option == "cambridgeanalytica") {
+                data_articles = ca_articles;
+                data_tweets = ca_tweets;
+            }
+            if (type == "articles") {
+                for(field in data_articles) {
+                    if(data_articles[field].FIELD2 > 1) 
+                        word_count[data_articles[field].FIELD1] = data_articles[field].FIELD2
+                }
+            } else if(type == "tweets") {
+                for(field in data_tweets) {
+                    if(data_tweets[field].FIELD2 > count) 
+                        word_count[data_tweets[field].FIELD1] = data_tweets[field].FIELD2
+                }
+            }
+        var svg_location = id;
+        var width = $(document).width();
+        var height = $(document).height() - 100;
+
+        var fill = d3.scale.category20();
+
+        var word_entries = d3.entries(word_count);
+
+        var xScale = d3.scale.linear()
+           .domain([0, d3.max(word_entries, function(d) {
+              return d.value;
+            })
+           ])
+           .range([10,100]);
+
+        d3.layout.cloud().size([width, height])
+          .timeInterval(20)
+          .words(word_entries)
+          .fontSize(function(d) { return xScale(+d.value); })
+          .text(function(d) { return d.key; })
+          .rotate(function() { return ~~(Math.random() * 2) * 90; })
+          .font("Impact")
+          .on("end", draw)
+          .start();
+
+        function draw(words) {
+          d3.select(svg_location).append("svg")
+              .attr("width", width)
+              .attr("height", height)
+            .append("g")
+              .attr("transform", "translate(" + [width >> 1, height >> 1] + ")")
+            .selectAll("text")
+              .data(words)
+            .enter().append("text")
+              .style("font-size", function(d) { return xScale(d.value) + "px"; })
+              .style("font-family", "Impact")
+              .style("fill", function(d, i) { return fill(i); })
+              .attr("text-anchor", "middle")
+              .attr("transform", function(d) {
+                return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+              })
+              .text(function(d) { return d.key; });
+        }
+
+        d3.layout.cloud().stop();
+      }
+    </script>
+  </body>
+</html>

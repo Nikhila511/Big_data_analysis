@@ -1,0 +1,92 @@
+<!-- ********************************************* Co-occurance word cloud visualization *************************************
+
+References : https://bl.ocks.org/blockspring/847a40e23f68d6d7e8b5 -->
+
+<html>
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js"></script>
+    <script src="cloud.js"></script>
+    <script src="cooccurence.js"></script>
+  </head>
+  <body>
+    <h1 style="text-align: center;">CSE 587 Data Intensive Computing - Lab2 Co occurance</h1>
+    <h3>Co-occurance Word Cloud for Twitter Data</h3>
+    <div id="chart1"></div>
+    <h3>Co-occurance Word Cloud for NYTimes Data</h3>
+    <div id="chart2"></div>
+    <script>
+
+        drawWordCloud("trump","tweets","#chart1");
+        drawWordCloud("trump","articles","#chart2");
+
+      function drawWordCloud(option,type,id){
+            var elem = id.replace("#","");
+            document.getElementById(elem).innerHTML = "";
+            var data_articles = null;
+            var data_tweets = null;
+            var count = 500;
+            var word_count= {};
+            data_articles = articles_cooccurance;
+            data_tweets = twitter_cooccurance;
+
+            if (type == "articles") {
+                for(field in data_articles) {
+                    if(data_articles[field].FIELD2 > 1) 
+                        word_count[data_articles[field].FIELD1] = data_articles[field].FIELD2
+                }
+            } else if(type == "tweets") {
+                for(field in data_tweets) {
+                    if(data_tweets[field].FIELD2 > 1) 
+                        word_count[data_tweets[field].FIELD1] = data_tweets[field].FIELD2
+                }
+            }
+        var svg_location = id;
+        var width = $(document).width();
+        var height = $(document).height() - 100;
+
+        var fill = d3.scale.category20();
+
+        var word_entries = d3.entries(word_count);
+
+        var xScale = d3.scale.linear()
+           .domain([0, d3.max(word_entries, function(d) {
+              return d.value;
+            })
+           ])
+           .range([10,100]);
+
+        d3.layout.cloud().size([width, height])
+          .timeInterval(20)
+          .words(word_entries)
+          .fontSize(function(d) { return xScale(+d.value); })
+          .text(function(d) { return d.key; })
+          .rotate(function() { return ~~(Math.random() * 2) * 90; })
+          .font("Impact")
+          .on("end", draw)
+          .start();
+
+        function draw(words) {
+          d3.select(svg_location).append("svg")
+              .attr("width", width)
+              .attr("height", height)
+            .append("g")
+              .attr("transform", "translate(" + [width >> 1, height >> 1] + ")")
+            .selectAll("text")
+              .data(words)
+            .enter().append("text")
+              .style("font-size", function(d) { return xScale(d.value) + "px"; })
+              .style("font-family", "Impact")
+              .style("fill", function(d, i) { return fill(i); })
+              .attr("text-anchor", "middle")
+              .attr("transform", function(d) {
+                return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+              })
+              .text(function(d) { return d.key; });
+        }
+
+        d3.layout.cloud().stop();
+      }
+    </script>
+  </body>
+</html>
